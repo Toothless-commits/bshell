@@ -179,7 +179,10 @@ int main()
         }
         else
         {
-            string path = findPath(arg);
+            vector<string>ar; 
+            echo(line,ar); 
+
+            string path = findPath(ar[0]);
 
             if (!path.empty())
             {
