@@ -6,7 +6,8 @@
 #include <filesystem>
 #include <sys/wait.h>
 #include <unistd.h>
-
+#include<fcntl.h>
+#include<cstring>
 using namespace std;
 namespace fs = std::filesystem;
 
@@ -96,6 +97,86 @@ void echo(string &line,vector<string>&ans)
     }
 
 }
+int red(vector<string>&ar)
+{
+    for(int i=0;i<ar.size();i++)
+    {
+        if(ar[i]==">" || ar[i]=="1>" || ar[i]=="2>")
+        {
+            return i;
+        }
+
+    }
+    return -1;
+}
+void execute(vector<string>ar)
+{
+     string path = findPath(ar[0]);
+
+            if (!path.empty())
+            {
+                int out = red(ar);
+                vector<char*> argv;
+                if(out==-1)
+                {for (auto& s : ar)
+                    argv.push_back(s.data());}
+                    else 
+                    {
+                        for(int i=0;i<out;i++)
+                        {
+                            argv.push_back(ar[i].data());
+                        }
+                    }
+
+                argv.push_back(nullptr);
+
+                pid_t pid = fork();
+
+                if (pid == 0)
+                {
+                    
+                    int fd=-1; 
+                    if(out !=-1)
+                    {
+                        string &op = ar[out]; 
+                        string &filename =ar[out+1];
+                        if(ar[out]==">" || ar[out] == "1>" ||ar[out]== "2>")
+                        fd = open(filename.c_str(),O_WRONLY | O_CREAT | O_TRUNC,0644);
+                        else if(ar[out]==">>")
+                        fd = open(filename.c_str(),O_WRONLY | O_CREAT | O_TRUNC | O_APPEND,0644);
+                        if(fd==-1)
+                        {
+                        perror("open"); 
+                        exit(1);
+                         }
+                         if(op=="2>")
+                    {
+                        dup2(fd,2); 
+                    }
+                    else dup2(fd,1);
+
+                    close (fd);
+                    }
+                    
+
+                    
+                    execv(path.c_str(), argv.data());
+
+                    perror("execv");
+                    exit(1);
+                }
+                
+                wait(nullptr);
+                cout << flush;
+               
+                
+                
+        }
+        else 
+        { 
+                cout << ar[0] << ": command not found\n";
+        }
+}
 int main()
 {
     cout << unitbuf;
@@ -130,14 +211,34 @@ int main()
         }
         else if (arg == "echo")
         {
-            vector<string>v; 
-            echo(line,v);
-
-            for(int i=1;i<v.size();i++)
+            vector<string>ar; 
+            echo(line,ar);
+            int out = red(ar); 
+            if(out==-1){
+            for(int i=1;i<ar.size();i++)
             {
-                cout << v[i] << " " ;
+                cout << ar[i] << " " ;
             }            
-            cout << endl;
+            cout << endl;}
+            else 
+            {   
+                int fd =-1;
+                 string &op = ar[out]; 
+                string &filename =ar[out+1];
+                if(ar[out]==">" || ar[out] == "1>" ||ar[out]== "2>")
+                fd = open(filename.c_str(),O_WRONLY | O_CREAT | O_TRUNC,0644);
+                else if(ar[out]==">>")
+                fd = open(filename.c_str(),O_WRONLY | O_CREAT | O_TRUNC | O_APPEND,0644);
+
+                for(int i=1;i<out;i++)
+                {
+                    write(fd,ar[i].c_str(),strlen(ar[i].data()));
+                    write(fd," ",1);
+                }
+                write(fd,"\n",1); 
+                close(fd);
+                
+            }
 
         }
         else if (arg == "pwd")
@@ -182,38 +283,9 @@ int main()
             vector<string>ar; 
             echo(line,ar); 
 
-            string path = findPath(ar[0]);
-
-            if (!path.empty())
-            {
-
-                vector<string> args;
-                echo(line,args); 
-
-                vector<char*> argv;
-
-                for (auto& s : args)
-                    argv.push_back(s.data());
-
-                argv.push_back(nullptr);
-
-                pid_t pid = fork();
-
-                if (pid == 0)
-                {
-                    execv(path.c_str(), argv.data());
-
-                    perror("execv");
-                    exit(1);
-                }
-                
-                wait(nullptr);
-                
-            }
-            else
-            {
-                cout << arg << ": command not found\n";
-            }
+            execute(ar);
+            
+           
         }
     }
 
