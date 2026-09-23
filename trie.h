@@ -1,119 +1,112 @@
 #ifndef TRIE_H
 #define TRIE_H
 
-#include<vector>
-#include<string>
-using namespace std;
-class Trie{
-  struct Node{
-    Node * links[128] ={nullptr}; 
-    bool flag = false;
+#include <vector>
+#include <string>
 
-    bool containskey(char ch)
-    {
-      return (links[ch]!=NULL);
-    }
-    
-    void put(char ch ,Node* node)
-    {
-      links[ch]=node;
-    }
+class Trie {
+public:
+    struct Node {
+        Node* links[128] = {nullptr};
+        bool flag = false;
 
-    Node* get(char ch)
-    {
-      return links[ch];
-    }
-
-    void setEnd()
-    {
-      flag = true;
-    }
-
-    bool isEnd()
-    {
-      return flag;
-    }
-  };
-
-  public :
-
-  struct Node* root = new Node();
-
-    void insert(string word)
-    {
-      Node* node = root;
-      for(int i=0;i<word.size();i++)
-      {
-        if(!node->containskey(word[i]))
-        {
-            node->put(word[i],new Node());
-        } 
-          node = node->get(word[i]);
-      }
-
-      node ->setEnd();
-    }
-
-    bool search (string word)
-    {
-      Node* node = root;
-      for(int i=0;i<word.size();i++)
-      {
-        if(!node->containskey(word[i]))return false ; 
-       node = node->get(word[i]);
-      }
-
-      return node->isEnd();
-    }
-
-    bool startswith(string word)
-    {
-      Node* node = root;
-      for(int i=0;i<word.size();i++)
-      {
-        if(!node->containskey(word[i]))return false;
-      }
-
-      return true;
-    }
-
-    bool dfs(Node*node,string& final)
-    {
-      if(node->isEnd())return true;
-      for(int i=0;i<128;i++)
-      {
-        if(node ->links[i])
-        {
-          final+=(char)(i); 
-          if(dfs(node->links[i],final))return true; 
-
-          final.pop_back();
+        ~Node() {
+            for (int i = 0; i < 128; i++) {
+                delete links[i];
+            }
         }
-      }
 
-      return false;
+        bool containskey(char ch) {
+            unsigned char idx = static_cast<unsigned char>(ch);
+            if (idx >= 128) return false;
+            return (links[idx] != nullptr);
+        }
+
+        void put(char ch, Node* node) {
+            unsigned char idx = static_cast<unsigned char>(ch);
+            if (idx < 128) {
+                links[idx] = node;
+            }
+        }
+
+        Node* get(char ch) {
+            unsigned char idx = static_cast<unsigned char>(ch);
+            if (idx >= 128) return nullptr;
+            return links[idx];
+        }
+
+        void setEnd() {
+            flag = true;
+        }
+
+        bool isEnd() const {
+            return flag;
+        }
+    };
+
+    Node* root = new Node();
+
+    ~Trie() {
+        delete root;
     }
 
-    string autocomplete(string cur)
-    {
-      Node* node = root;
-      string final="";
-     for(int i=0;i<cur.size();i++)
-     {
-       if(!node->containskey(cur[i]))return cur;
-       else 
-       {
-         final+=cur[i];
-         node = node->get(cur[i]); 
+    void insert(const std::string& word) {
+        Node* node = root;
+        for (char ch : word) {
+            if (!node->containskey(ch)) {
+                node->put(ch, new Node());
+            }
+            node = node->get(ch);
+            if (!node) return;
+        }
+        node->setEnd();
+    }
 
-       }
-     }
+    bool search(const std::string& word) {
+        Node* node = root;
+        for (char ch : word) {
+            if (!node->containskey(ch)) return false;
+            node = node->get(ch);
+            if (!node) return false;
+        }
+        return node->isEnd();
+    }
 
-      if(dfs(node,final))return final;
-      else return cur;
+    bool startswith(const std::string& word) {
+        Node* node = root;
+        for (char ch : word) {
+            if (!node->containskey(ch)) return false;
+            node = node->get(ch);
+            if (!node) return false;
+        }
+        return true;
+    }
 
-      
+    bool dfs(Node* node, std::string& final_str) {
+        if (node->isEnd()) return true;
+        for (int i = 0; i < 128; i++) {
+            if (node->links[i]) {
+                final_str += static_cast<char>(i);
+                if (dfs(node->links[i], final_str)) return true;
+                final_str.pop_back();
+            }
+        }
+        return false;
+    }
+
+    std::string autocomplete(const std::string& cur) {
+        Node* node = root;
+        std::string final_str = "";
+        for (char ch : cur) {
+            if (!node->containskey(ch)) return cur;
+            final_str += ch;
+            node = node->get(ch);
+            if (!node) return cur;
+        }
+
+        if (dfs(node, final_str)) return final_str;
+        return cur;
     }
 };
 
-#endif
+#endif // TRIE_H

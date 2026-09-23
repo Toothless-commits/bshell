@@ -1,37 +1,33 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
-#include<termios.h>
-class Terminal{
 
-  private : struct termios oldt,newt;
+#include <termios.h>
+#include <unistd.h>
 
-  public : 
-     Terminal()
-  {
-    tcgetattr(STDIN_FILENO,&oldt); 
-    newt = oldt;
-  }
+class Terminal {
+private:
+    struct termios oldt, newt;
 
-  void enableDirectInput()
-  {
-    newt.c_lflag &= ~(ICANON | ECHO); 
-    tcsetattr(STDIN_FILENO,TCSANOW,&newt);
-  }
+public:
+    Terminal() {
+        tcgetattr(STDIN_FILENO, &oldt);
+        newt = oldt;
+    }
 
-  void normalmode()
-  {
-    tcsetattr(STDIN_FILENO,TCSANOW,&oldt);
-  }
+    void enableDirectInput() {
+        newt.c_lflag &= ~(ICANON | ECHO);
+        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    }
 
-  char getchar()
-  {
-    char c; 
-    read(STDIN_FILENO,&c,1); 
-    return c;
-  }
+    void normalmode() {
+        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    }
 
-
-
+    char getchar() {
+        char c;
+        read(STDIN_FILENO, &c, 1);
+        return c;
+    }
 };
 
-#endif
+#endif // TERMINAL_H
