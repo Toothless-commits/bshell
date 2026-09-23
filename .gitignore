@@ -1,0 +1,3 @@
+*.o
+bshell
+test_out.txt
